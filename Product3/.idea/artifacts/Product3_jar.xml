@@ -1,0 +1,22 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Product3:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Product3_jar</output-path>
+    <root id="archive" name="Product3.jar">
+      <element id="module-output" name="Product3" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/jl1.0.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/commons-cli-1.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/slf4j-api-1.7.21.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/logback-classic-1.0.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/Mail/smtp.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/xuggle-xuggler-5.4.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/jmf-2.1.1e.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/commons-lang3-3.5.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/logback-core-1.0.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/junit-4.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/Mail/mail.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/xuggler/com.xuggle.utils-1.22.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/Mail/activation.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/Downloads/opencv-2.4.13-0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
