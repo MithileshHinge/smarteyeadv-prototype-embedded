@@ -11,20 +11,21 @@ import java.nio.ByteBuffer;
  */
 public class DetectPerson {
 
-    private int yoloPort = 7777;
-    private ServerSocket ss;
-    private BufferedReader stdInput;
+    private int yoloPort = 7777, numPeoplePort = 7776;
+    private ServerSocket ss, ss2;
 
     public DetectPerson(){
         try {
             ss = new ServerSocket(yoloPort);
             ss.setSoTimeout(0);
             ss.setReuseAddress(true);
+            ss2 = new ServerSocket(numPeoplePort);
+            ss2.setSoTimeout(0);
+            ss2.setReuseAddress(true);
 
             Runtime rt = Runtime.getRuntime();
-            String[] darknetComm = new String[]{"/Users/mithileshhinge/Documents/AI_hobby_projects/darknet/darknet", "detector", "demo", "/Users/mithileshhinge/Documents/AI_hobby_projects/darknet/cfg/coco.data", "/Users/mithileshhinge/Documents/AI_hobby_projects/darknet/cfg/yolo.cfg", "/Users/mithileshhinge/Documents/AI_hobby_projects/darknet/yolo.weights"};
-            Process proc = rt.exec(darknetComm);
-            BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+            String[] darknetComm = new String[]{"./darknet", "detector", "demo", "cfg/voc.data", "cfg/yolo-voc.cfg", "yolo-voc.weights"};
+            Process proc = rt.exec(darknetComm, null, new File("/home/mithi/Desktop/darknet"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -62,31 +63,29 @@ public class DetectPerson {
                 totSent += 1024;
             }
             dout.flush();
-
-            InputStream in = s.getInputStream();
-            in.read();
-
+            
             s.close();
-
-            String output = "", line = null;
-            while ((line = stdInput.readLine()) != null){
-                output += line;
-            }
-
-            int index = output.indexOf("person");
-            int count = 0;
-            while (index != -1) {
-                count++;
-                output = output.substring(index + 1);
-                index = output.indexOf("person");
-            }
-
+            
+            Socket s2 = ss2.accept();
+            
+            byte[] bCount = new byte[4];
+    		InputStream in = s2.getInputStream();
+    		
+    		for (int i=0; i<4; i++){
+    			bCount[i] = (byte) in.read();
+    		}
+    		
+    		int count = ByteBuffer.wrap(bCount).getInt();
+    		
+    		s2.close();
+    		System.out.println("People found: " + count);
             return count;
 
         } catch (IOException e) {
             e.printStackTrace();
+            return 0;
         }
 
-        return 0;
+        
     }
 }

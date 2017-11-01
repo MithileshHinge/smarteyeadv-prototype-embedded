@@ -1,8 +1,12 @@
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -37,7 +41,7 @@ public class Main {
 	
     
 	
-	public static final String outputFilename = "C://Users//Home//Desktop//videos//";
+	public static final String outputFilename = "//home//mithi//Desktop//videos//";
 	public static IMediaWriter writer;
 	public static boolean startStoring = true;
 	public static long startTime;
@@ -50,11 +54,12 @@ public class Main {
 	static OutputStream out;
 	public static int myNotifId = 1;
 	
-	public static final String outputFilename4android = "C://Users//Home//Desktop//videos4android//";
+	public static final String outputFilename4android = "//home//mithi//Desktop//videos4android//";
 	public static final byte BYTE_PEOPLE_VDOGENERATING = 1, BYTE_PEOPLE_VDOGENERATED = 2, BYTE_ALERT1 = 3, BYTE_ALERT2 = 4, BYTE_ABRUPT_END = 5;
 	public static IMediaWriter writer4android;
 	public static String store_name4android;
-
+	public static String store_activityname;
+	
 	static long timeNow1, timeNow2;
 	static long time3, time4;
 	public static long timeAndroidVdoStarted = -1;
@@ -66,6 +71,8 @@ public class Main {
 	public static boolean notif2given = false;
 	public static boolean notif1given = false;
 	public static int framesRead = 0;
+	
+	static BufferedImage camimg;
 	
 	/*static {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
@@ -94,21 +101,21 @@ public class Main {
 
 		DetectPerson detectPerson = new DetectPerson();
 
-		VideoCapture capture = new VideoCapture(1);
+		VideoCapture capture = new VideoCapture(0);
 		if (!capture.isOpened()) {
 			System.out.println("Error - cannot open camera!");
 			return;
 		}
 		
-		BackgroundSubtractorMOG2 backgroundSubtractorMOG = createBackgroundSubtractorMOG2(333, 16, false);
+		BackgroundSubtractorMOG2 backgroundSubtractorMOG = new BackgroundSubtractorMOG2(333, 16, false);
 		
-		frontal_face_cascade = new CascadeClassifier("C://Users//Home//Desktop//haarcascades//haarcascade_frontalface_alt.xml");
+		frontal_face_cascade = new CascadeClassifier("//home//mithi//Desktop//haarcascades//haarcascade_frontalface_alt.xml");
 		if (frontal_face_cascade.empty()) {
 			System.out.println("--(!)Error loading Front Face Cascade\n");
 			return;
 		} else System.out.println("Front Face classifier loaded");
 		
-		mouthCascade = new CascadeClassifier("C://Users//Home//Desktop//haarcascades//Mouth.xml");
+		mouthCascade = new CascadeClassifier("//home//mithi//Desktop//haarcascades//Mouth.xml");
 		if(mouthCascade.empty()){
 			System.out.println("--(!)Error loading Mouth Cascade\n");
 			return;
@@ -130,8 +137,8 @@ public class Main {
 			}
 			
 			//Send frame via live-feed
-			BufferedImage camimg = matToBufferedImage(camImage);
-			sendingFrame.frame = camimg;
+			camimg = matToBufferedImage(camImage);
+//			sendingFrame.frame = camimg;
 			
 			//Background subtraction without learning background
 			Mat fgMask = new Mat();
@@ -192,9 +199,8 @@ public class Main {
 
 				//Detect person in 2nd frame
                 if (frame_no==2) {
-                    nPersons = detectPerson.findNumPeople(camImage);
+                    nPersons = detectPerson.findNumPeople(output);
                     nPersonsAvg = (float) (nPersonsAvg * nPersonsFrames + nPersons) / (float) (nPersonsFrames + 1);
-                    nPersonsFrames++;
                     nPersons = Math.round(nPersonsAvg);
                 }
 
@@ -215,21 +221,22 @@ public class Main {
                     }
 
                     nFaces = front_faces.toArray().length;
-                    nFacesAvg = (float) (nFacesAvg * nPersonsFrames + nFaces) / (float) (nPersonsFrames);
+                    nFacesAvg = (float) (nFacesAvg * nPersonsFrames + nFaces) / (float) (nPersonsFrames + 1);
+                    nPersonsFrames++;
                     nFaces = Math.round(nFacesAvg);
                 }
 
 
                 // 1st notif after 4 seconds
-                if ((System.currentTimeMillis() - time3) / 1000 == 4   &&  !notif1given) {
+                if ((System.currentTimeMillis() - time3) / 1000 >= 4   &&  !notif1given) {
                     if (nPersons == 0) {
                         notifThread.notifFrame = camimg;
                         notifThread.p = BYTE_ALERT1;
                         notifThread.myNotifId = myNotifId;
                         notifThread.sendNotif = true;
 
-                        AudioPlaying audioPlaying = new AudioPlaying();
-                        audioPlaying.start();
+                        //AudioPlaying audioPlaying = new AudioPlaying();
+                        //audioPlaying.start();
                     }else {
                         notifThread.notifFrame = camimg;
                         notifThread.p = BYTE_PEOPLE_VDOGENERATING;
@@ -239,14 +246,15 @@ public class Main {
                         notifThread.sendNotif = true;
 
                         if (nPersons > nFaces) {
-                            AudioPlaying audioPlaying = new AudioPlaying();
-                            audioPlaying.start();
+                            //AudioPlaying audioPlaying = new AudioPlaying();
+                            //audioPlaying.start();
                         }
                     }
 
                     notif1given = true;
-
+                    
                     store_name4android = outputFilename4android + ft.format(dNow) + ".mp4";
+                    store_activityname = ft.format(dNow);
                     writer4android = ToolFactory.makeWriter(store_name4android);
                     writer4android.addVideoStream(0, 0, ICodec.ID.CODEC_ID_MPEG4, 640, 480);
                     startTime4android = System.nanoTime();
@@ -261,7 +269,7 @@ public class Main {
                 }
 
                 // 2nd notif after every 15 seconds:
-                if (((System.currentTimeMillis() - time3) / 1000) == 15 && !notif2given) {
+                if (((System.currentTimeMillis() - time3) / 1000) >= 15) {
                     if (nPersons == 0) {
                         // TODO: no people found but suspicious activity Ab kya kare???
 
@@ -277,16 +285,19 @@ public class Main {
                         notifThread.sendNotif = true;
 
                         if (nPersons > nFaces) {
-                            AudioPlaying audioPlaying = new AudioPlaying();
-                            audioPlaying.start();
+                            // TODO: Sound ALARM!!!
                         }
                     }
 
-                    notif2given = true;
+                    if (!notif2given){
+                    	notif2given = true;
 
-                    writer4android.close();
-                    sendingVideo.notifId2filepaths.put(new Integer(myNotifId), store_name4android);
-                    SendMail.sendmail_notif = true;
+                        writer4android.close();
+                        sendingVideo.notifId2filepaths.put(new Integer(myNotifId), store_name4android);
+                        SendMail.sendmail_notif = true;
+                    }
+                    
+                    time3 = System.currentTimeMillis();
 
                     nFaces = 0;
                     nFacesAvg = 0;
@@ -360,6 +371,10 @@ public class Main {
 				backgroundSubtractorMOG.apply(camImage, fgMask, -1);
 			}
 			
+			camimg = matToBufferedImage(camImage);
+			BufferedImage camimg2 = timestampIt(camimg);
+			sendingFrame.frame = camimg2;
+			
 			if (framesRead < 350) framesRead++;
 			time4 = System.currentTimeMillis();
 			timeNow2 = System.currentTimeMillis();
@@ -406,13 +421,13 @@ public class Main {
     	        //System.out.println(String.format("Detected %s Mouth(s)", mouth.toArray().length));
     	        }
     	    }
-    	    if(faceNotCovered){
+    	    //if(faceNotCovered){
     	    	System.out.println(String.format("Detected %s face(s)", front_faces.toArray().length));
     	    	//FacenotCovered=false;
-    	    }else{
-    	    	System.out.println(String.format("Detected people = 0"));
+    	    //}else{
+    	    	//System.out.println(String.format("Detected people = 0"));
     	    	//break;                                                                    ///add break for multiple faces or else no need	
-    	    }
+    	    //}
     	}
     	return front_faces;
     	//return mRgba;
@@ -432,6 +447,22 @@ public class Main {
 		frame.get(0, 0, data);
 		return image;
 		
+	}
+	
+	private static BufferedImage timestampIt(BufferedImage toEdit){
+		BufferedImage dest = new BufferedImage(toEdit.getWidth(), toEdit.getHeight(),  BufferedImage.TYPE_3BYTE_BGR);
+		
+	    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	    String dateTime = sdf.format(Calendar.getInstance().getTime()); // reading local time in the system
+	    
+	    Graphics2D g2 = dest.createGraphics();
+	    //Color darkgreen= new Color(28,89,71);
+	    Color darkgreen= new Color(0,0,0);
+	    g2.drawImage(toEdit, 0, 0, toEdit.getWidth(), toEdit.getHeight(), null);
+	    g2.setColor(darkgreen);
+	    g2.setFont(new Font("TimesRoman", Font.PLAIN, 25)); 
+	    g2.drawString(dateTime, 350, 450);
+	    return dest;
 	}
 	
 

@@ -169,6 +169,8 @@ public class NotificationThread extends Thread {
 						System.out.println("........................still sending p.........................."+ p);
 
 						if (p == Main.BYTE_PEOPLE_VDOGENERATING || p == Main.BYTE_PEOPLE_VDOGENERATED){
+							System.out.println("......................sending nPersons: " + nPersons);
+							System.out.println("......................sending nFaces: " + nFaces);
 						    out_note.write(nPersons);
 						    out_note.write(nFaces);
 						    out_note.flush();
@@ -183,8 +185,12 @@ public class NotificationThread extends Thread {
 							ImageIO.write(notifFrame, "jpg", out_frame);
 							socket_frame.close();
 						}
-						if (p == Main.BYTE_PEOPLE_VDOGENERATED || p == Main.BYTE_ALERT2)
+						if (p == Main.BYTE_PEOPLE_VDOGENERATED || p == Main.BYTE_ALERT2 || p == Main.BYTE_ABRUPT_END){
+							DataOutputStream dout_activity = new DataOutputStream(out_note);
+							dout_activity.writeUTF(Main.store_activityname);
+							dout_activity.flush();
 							System.out.println("2nd vdo generated notif sent.......................");
+						}
 						DataOutputStream dout_note = new DataOutputStream(out_note);
 						dout_note.writeInt(myNotifId);
 						dout_note.flush();

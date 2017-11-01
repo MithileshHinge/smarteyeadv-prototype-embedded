@@ -143,6 +143,6 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="opencv-300" level="application" />
+    <orderEntry type="library" name="opencv-2.4.13-0" level="application" />
   </component>
 </module>
