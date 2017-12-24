@@ -15,10 +15,6 @@
 	<classpathentry kind="lib" path="Mail/activation.jar"/>
 	<classpathentry kind="lib" path="Mail/mail.jar"/>
 	<classpathentry kind="lib" path="Mail/smtp.jar"/>
-	<classpathentry kind="lib" path="/usr/share/OpenCV/java/opencv-248.jar">
-		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="/usr/lib/jni"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/opencv-3.3.0"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -17,14 +17,12 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.highgui.VideoCapture;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.video.BackgroundSubtractorMOG2;
-
-import com.xuggle.mediatool.IMediaWriter;
-import com.xuggle.mediatool.ToolFactory;
-import com.xuggle.xuggler.ICodec;
+import org.opencv.video.Video;
+import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.VideoWriter;
 
 public class Main {
 
@@ -42,7 +40,7 @@ public class Main {
     
 	
 	public static final String outputFilename = "//home//mithi//Desktop//videos//";
-	public static IMediaWriter writer;
+	public static VideoWriter writer;
 	public static boolean startStoring = true;
 	public static long startTime;
 	public static long startTime4android;
@@ -56,7 +54,7 @@ public class Main {
 	
 	public static final String outputFilename4android = "//home//mithi//Desktop//videos4android//";
 	public static final byte BYTE_PEOPLE_VDOGENERATING = 1, BYTE_PEOPLE_VDOGENERATED = 2, BYTE_ALERT1 = 3, BYTE_ALERT2 = 4, BYTE_ABRUPT_END = 5;
-	public static IMediaWriter writer4android;
+	public static VideoWriter writer4android;
 	public static String store_name4android;
 	public static String store_activityname;
 	
@@ -71,6 +69,7 @@ public class Main {
 	public static boolean notif2given = false;
 	public static boolean notif1given = false;
 	public static int framesRead = 0;
+	public static String fourcc = "MP4V";
 	
 	static BufferedImage camimg;
 	
@@ -95,9 +94,6 @@ public class Main {
 		
 		NotificationThread notifThread = new NotificationThread();
 		notifThread.start();
-		
-		SendMail t3 = new SendMail();
-		t3.start();
 
 		DetectPerson detectPerson = new DetectPerson();
 
@@ -107,7 +103,7 @@ public class Main {
 			return;
 		}
 		
-		BackgroundSubtractorMOG2 backgroundSubtractorMOG = new BackgroundSubtractorMOG2(333, 16, false);
+		BackgroundSubtractorMOG2 backgroundSubtractorMOG = Video.createBackgroundSubtractorMOG2(333, 16, false);
 		
 		frontal_face_cascade = new CascadeClassifier("//home//mithi//Desktop//haarcascades//haarcascade_frontalface_alt.xml");
 		if (frontal_face_cascade.empty()) {
@@ -123,8 +119,9 @@ public class Main {
 
         int nFaces = 0;
         float nFacesAvg = 0;
-		int nPersonsFrames = 0, nPersons = 0;
+		int nPersonsFrames = 0, nPersons = 0, nFacesFrames = 0;
 		float nPersonsAvg = 0;
+		boolean startAverageCalc = false;
 
 		while(true){
 			timeNow1 = System.currentTimeMillis();
@@ -176,8 +173,7 @@ public class Main {
 					time3 = System.currentTimeMillis();
 					store_name = outputFilename + ft.format(dNow) + ".mp4";
 					store_file_name = ft.format(dNow);
-					writer = ToolFactory.makeWriter(store_name);
-					writer.addVideoStream(0, 0, ICodec.ID.CODEC_ID_MPEG4, 640, 480);
+					writer = new VideoWriter(store_name, VideoWriter.fourcc( fourcc.charAt(0), fourcc.charAt(1), fourcc.charAt(2), fourcc.charAt(3)), 20, new Size(640,480), true);
 					/*store_name4android = outputFilename4android + ft.format(dNow) + ".mp4";
 					writer4android = ToolFactory.makeWriter(store_name4android);
 					writer4android.addVideoStream(0, 0, ICodec.ID.CODEC_ID_MPEG4, 640, 480);*/
@@ -187,12 +183,12 @@ public class Main {
 				}
 				
 				//Write frame to video
-				writer.encodeVideo(0, camimg, System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+				writer.write(camImage);
 
 				//If writer4android is open, write frame to android video also
 				if (writer4android != null){
-					if(writer4android.isOpen()){
-					    writer4android.encodeVideo(0, camimg, System.nanoTime() - startTime4android, TimeUnit.NANOSECONDS);
+					if(writer4android.isOpened()){
+						 writer4android.write(camImage);
 					}
 				}
 				frame_no++;
@@ -202,6 +198,7 @@ public class Main {
                     nPersons = detectPerson.findNumPeople(output);
                     nPersonsAvg = (float) (nPersonsAvg * nPersonsFrames + nPersons) / (float) (nPersonsFrames + 1);
                     nPersons = Math.round(nPersonsAvg);
+                    nPersonsFrames++;
                 }
 
 
@@ -216,20 +213,35 @@ public class Main {
 
                     for (Rect rect : front_faces.toArray()) {
                         Point center = new Point(rect.x + rect.width * 0.5, rect.y + rect.height * 0.5);
-                        Core.ellipse(camImage, center, new Size(rect.width * 0.5, rect.height * 0.5), 0, 0, 360,
+                        Imgproc.ellipse(camImage, center, new Size(rect.width * 0.5, rect.height * 0.5), 0, 0, 360,
                                 new Scalar(0, 255, 0), 4, 8, 0);
                     }
 
                     nFaces = front_faces.toArray().length;
-                    nFacesAvg = (float) (nFacesAvg * nPersonsFrames + nFaces) / (float) (nPersonsFrames + 1);
-                    nPersonsFrames++;
-                    nFaces = Math.round(nFacesAvg);
+                    if (notif1given && !startAverageCalc && nFaces>0){
+                    	startAverageCalc = true;
+                    }
+                    
+                    if (!notif1given || startAverageCalc){
+                    	
+                    	nFacesAvg = (float) (nFacesAvg * nFacesFrames + nFaces) / (float) (nFacesFrames + 1);
+                    	nFacesFrames++;
+                    	if (nFacesFrames > 7){
+                    		nFaces = Math.round(nFacesAvg);
+                    	}else {
+                    		nFaces = 0;
+                    	}
+                    	System.out.println("nFacesAvg: "+nFacesAvg);
+                        System.out.println("nFaces: "+nFaces);
+                    }
                 }
 
 
                 // 1st notif after 4 seconds
                 if ((System.currentTimeMillis() - time3) / 1000 >= 4   &&  !notif1given) {
                     if (nPersons == 0) {
+                    	System.out.println("1st notif..................................................... Alert 1");
+                    	
                         notifThread.notifFrame = camimg;
                         notifThread.p = BYTE_ALERT1;
                         notifThread.myNotifId = myNotifId;
@@ -238,6 +250,7 @@ public class Main {
                         //AudioPlaying audioPlaying = new AudioPlaying();
                         //audioPlaying.start();
                     }else {
+                    	System.out.println("1st notif..................................................... People found Video Generating");
                         notifThread.notifFrame = camimg;
                         notifThread.p = BYTE_PEOPLE_VDOGENERATING;
                         notifThread.nPersons = nPersons;
@@ -255,9 +268,8 @@ public class Main {
                     
                     store_name4android = outputFilename4android + ft.format(dNow) + ".mp4";
                     store_activityname = ft.format(dNow);
-                    writer4android = ToolFactory.makeWriter(store_name4android);
-                    writer4android.addVideoStream(0, 0, ICodec.ID.CODEC_ID_MPEG4, 640, 480);
-                    startTime4android = System.nanoTime();
+                    writer4android = new VideoWriter(store_name4android, VideoWriter.fourcc( fourcc.charAt(0), fourcc.charAt(1), fourcc.charAt(2), fourcc.charAt(3)), 20, new Size(640,480), true);
+					startTime4android = System.nanoTime();
                     time3 = System.currentTimeMillis();
 
                     nFaces = 0;
@@ -265,6 +277,7 @@ public class Main {
                     nPersons = 0;
                     nPersonsAvg = 0;
                     nPersonsFrames = 0;
+                    nFacesFrames = 0;
 
                 }
 
@@ -272,18 +285,21 @@ public class Main {
                 if (((System.currentTimeMillis() - time3) / 1000) >= 15) {
                     if (nPersons == 0) {
                         // TODO: no people found but suspicious activity Ab kya kare???
-
+                    	
+                    	System.out.println("2nd notif..................................................... Alert 2");
                         notifThread.p = BYTE_ALERT2;
                         notifThread.myNotifId = myNotifId;
                         notifThread.sendNotif = true;
                         myNotifId++;
                     }else {
+                    	System.out.println("2nd notif..................................................... People found Video generated");
                         notifThread.p = BYTE_PEOPLE_VDOGENERATED;
                         notifThread.nPersons = nPersons;
                         notifThread.nFaces = nFaces;
                         notifThread.myNotifId = myNotifId;
                         notifThread.sendNotif = true;
-
+                        myNotifId++;
+                        
                         if (nPersons > nFaces) {
                             // TODO: Sound ALARM!!!
                         }
@@ -292,7 +308,7 @@ public class Main {
                     if (!notif2given){
                     	notif2given = true;
 
-                        writer4android.close();
+                        writer4android.release();
                         sendingVideo.notifId2filepaths.put(new Integer(myNotifId), store_name4android);
                         SendMail.sendmail_notif = true;
                     }
@@ -304,6 +320,7 @@ public class Main {
                     nPersons = 0;
                     nPersonsAvg = 0;
                     nPersonsFrames = 0;
+                    nFacesFrames = 0;
                 }
 
                 /*
@@ -342,7 +359,7 @@ public class Main {
 				if(notifThread.p==BYTE_PEOPLE_VDOGENERATING || notifThread.p==BYTE_ALERT1)
 				{
 					System.out.println("abrupt end...........................");
-					writer4android.close();
+					writer4android.release();
 					sendingVideo.notifId2filepaths.put(new Integer(myNotifId), store_name4android);
 					notifThread.p = BYTE_ABRUPT_END;
 					notifThread.myNotifId = myNotifId;
@@ -352,11 +369,13 @@ public class Main {
 				
 				//Writer close once bg becomes normal
 				if (writer_close){
-					writer.close();
+					writer.release();
 					writer_close = false;
 					notif1given = false;
 					notif2given = false;
 					SendMail.sendmail_vdo = true;
+					SendMail t3 = new SendMail();
+					t3.start();
 				}
 
 				nFaces = 0;
@@ -364,6 +383,8 @@ public class Main {
 				nPersons = 0;
 				nPersonsAvg = 0;
 				nPersonsFrames = 0;
+				nFacesFrames=0;
+				startAverageCalc = false;
 
 				frame_no = 0;
 				

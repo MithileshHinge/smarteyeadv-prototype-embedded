@@ -159,6 +159,7 @@ public class NotificationThread extends Thread {
 			if (sendNotif) {
 				try {
 					while (continue_sending) {
+						System.out.println("socket accept war thambla....@@@@!!!!!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 						socket_note = serverSocket_note.accept();
 						System.out.println("######################################.......................Client Sapadla!!!!!!");
 						out_note = socket_note.getOutputStream();

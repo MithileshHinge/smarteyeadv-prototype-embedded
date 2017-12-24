@@ -19,15 +19,7 @@ public class SendMail extends Thread {
 	public static boolean sendmail_vdo=false;
 	public static boolean sendmail_notif=false;
 	public void run(){
-	while(true)
-	{
-		try {
-			Thread.sleep(0, 10000);
-
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-		//System.out.println("@@@@@@@@@@@@@@@@@@....mail wala thread...@@@@@@@@@");
+	//System.out.println("@@@@@@@@@@@@@@@@@@....mail wala thread...@@@@@@@@@");
 	if(sendmail_vdo && sendmail_notif )
 	{
 		  System.out.println("######################Sending start zala#################");
@@ -105,7 +97,6 @@ public class SendMail extends Thread {
 	    	 System.out.println("Sending failed!!!");
 	         throw new RuntimeException(e);
 	      }
-	}
 	}
 	}
 
