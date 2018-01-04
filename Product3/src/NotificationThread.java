@@ -176,15 +176,15 @@ public class NotificationThread extends Thread {
 						    out_note.write(nFaces);
 						    out_note.flush();
 						    in_note.read();
+						    
                         }
 
-						if (p == Main.BYTE_PEOPLE_VDOGENERATING || p == Main.BYTE_ALERT1) {
-							System.out.println("1st notif sent..........................");
-						
+						if (p == Main.BYTE_PEOPLE_VDOGENERATING || p == Main.BYTE_ALERT1) {					
 							socket_frame = serverSocket_frame.accept();
 							out_frame = socket_frame.getOutputStream();
 							ImageIO.write(notifFrame, "jpg", out_frame);
 							socket_frame.close();
+							System.out.println("1st notif sent..........................");
 						}
 						if (p == Main.BYTE_PEOPLE_VDOGENERATED || p == Main.BYTE_ALERT2 || p == Main.BYTE_ABRUPT_END){
 							DataOutputStream dout_activity = new DataOutputStream(out_note);
@@ -193,6 +193,7 @@ public class NotificationThread extends Thread {
 							System.out.println("2nd vdo generated notif sent.......................");
 						}
 						DataOutputStream dout_note = new DataOutputStream(out_note);
+						System.out.println("........................still sending notif id.......................... = "+ myNotifId);
 						dout_note.writeInt(myNotifId);
 						dout_note.flush();
 						sendNotif = false;

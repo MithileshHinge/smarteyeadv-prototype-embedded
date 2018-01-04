@@ -10,7 +10,7 @@ import java.net.Socket;
 public class SendingAudio extends Thread{
 
     private static AudioFormat format;
-    private static int audioUdpPort = 6666, handshakePort = 6661;
+    private static int audioUdpPort = 6671, handshakePort = 6670;
     private static int sampleRate = 44100;
     private static ServerSocket serverSocket;
     private static Socket socket;
@@ -21,28 +21,29 @@ public class SendingAudio extends Thread{
     private static DataLine.Info dataLineInfo;
     private static SourceDataLine sourceDataLine;
 
-	public SendingAudio(){
-        try {
+	
+	@Override
+	public void run(){
+		
+		try {
             serverSocket = new ServerSocket(handshakePort);
             dataSocket = new DatagramSocket(audioUdpPort);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-	
-	@Override
-	public void run(){
+		
 	    while (true){
+	    	System.out.println(".............................sending audio");
             try {
 
                 socket = serverSocket.accept();
-                System.out.println("connection sapadla");
+                System.out.println("..................................connection sapadla");
                 out = socket.getOutputStream();
                 in = socket.getInputStream();
                 int p = in.read();
 
                 if (p==1){
-                    System.out.println(String.format("p=1 received"));
+                    System.out.println(String.format("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! p=1 received !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"));
                     out.write(2);
                     socket.close();
                 }else continue;
@@ -52,18 +53,17 @@ public class SendingAudio extends Thread{
                 format = new AudioFormat(sampleRate, 16, 1, true, false);
                 dataLineInfo = new DataLine.Info(SourceDataLine.class, format);
                 sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
+                
                 sourceDataLine.open(format);
                 sourceDataLine.start();
-                FloatControl volumeControl = (FloatControl) sourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);
-                volumeControl.setValue(1f);
+                //FloatControl volumeControl = (FloatControl) sourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);           //set speaker volume
+                //volumeControl.setValue(1f);
                 System.out.println(String.format("here"));
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
                 while (true){
                     try {
                         System.out.println(String.format("here"));
-
-
                         dataSocket.receive(receivePacket);
                         toSpeaker(receivePacket.getData());
                         System.out.println(String.format("here"));

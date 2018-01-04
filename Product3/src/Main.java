@@ -5,10 +5,18 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -24,6 +32,7 @@ import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 
+
 public class Main {
 
 	private static CascadeClassifier frontal_face_cascade;
@@ -31,13 +40,10 @@ public class Main {
 	static int frame_no = 0;
 	private static boolean faceNotCovered = false;
 	
-	
 	private static boolean LightRef = true;
     static int intialBlack;
     static int RefBlack;
     static int lightCount = 0;
-	
-    
 	
 	public static final String outputFilename = "//home//mithi//Desktop//videos//";
 	public static VideoWriter writer;
@@ -72,25 +78,30 @@ public class Main {
 	public static String fourcc = "MP4V";
 	
 	static BufferedImage camimg;
+	public static int faces_covered=0;
+	public static String ipAddr,ipAddr2;
+	private volatile static ConcurrentHashMap<Integer, String> notifId2filepaths = new ConcurrentHashMap<>();
 	
-	/*static {
-		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-	}*/
 	
+
 	static {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 	}
 	
 	public static void main(String[] args) {
 		
+		
 		SendingFrame sendingFrame = new SendingFrame();
 		sendingFrame.start();
 		
-		SendingVideo sendingVideo = new SendingVideo();
+		SendingVideo sendingVideo = new SendingVideo(notifId2filepaths );
 		sendingVideo.start();
 		
 		SendingAudio sendingAudio = new SendingAudio();
 		sendingAudio.start();
+		
+		Listen listen = new Listen();
+		listen.start();
 		
 		NotificationThread notifThread = new NotificationThread();
 		notifThread.start();
@@ -122,9 +133,53 @@ public class Main {
 		int nPersonsFrames = 0, nPersons = 0, nFacesFrames = 0;
 		float nPersonsAvg = 0;
 		boolean startAverageCalc = false;
-
+		
+		try {
+			NetworkInterface nif = NetworkInterface.getByName("wlan2");
+			 Enumeration <InetAddress> addresses = nif.getInetAddresses();
+			 while( addresses.hasMoreElements() )
+		      {
+		        InetAddress addr = addresses.nextElement();
+		        if( (addr instanceof Inet4Address) && !addr.isLoopbackAddress() )
+		        {
+		          System.out.println(addr.toString());
+		          ipAddr = addr.toString();
+		        }
+		      }
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		while(true){
 			timeNow1 = System.currentTimeMillis();
+            try {
+				NetworkInterface nif = NetworkInterface.getByName("wlan2");
+				 Enumeration <InetAddress> addresses = nif.getInetAddresses();
+				 while( addresses.hasMoreElements() )
+			      {
+			        InetAddress addr = addresses.nextElement();
+			        if( (addr instanceof Inet4Address) && !addr.isLoopbackAddress() )
+			        {
+			          //System.out.println(addr.toString());
+			          ipAddr2= addr.toString();
+			          if(!ipAddr.equals(ipAddr2))   
+			        	  {
+			        	  ipAddr = ipAddr2;
+			        	  SendMail.sendmail_ipChange =true;
+			        	  SendMail sendmail = new SendMail();
+			        	  sendmail.start();
+			        	  
+			        	  }
+			        }
+			      }
+			} catch (SocketException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				continue;
+			}
+            //System.out.println("time taken to compute ip of wlan2 = " + (System.currentTimeMillis()-timeNow1) );
+            
 			Mat camImage = new Mat();
 			
 			capture.read(camImage);
@@ -135,7 +190,7 @@ public class Main {
 			
 			//Send frame via live-feed
 			camimg = matToBufferedImage(camImage);
-//			sendingFrame.frame = camimg;
+			//sendingFrame.frame = camimg;
 			
 			//Background subtraction without learning background
 			Mat fgMask = new Mat();
@@ -165,7 +220,7 @@ public class Main {
 			
 			//Consider background change if black % is less that 97
 			if (blackCountPercent < 97 && framesRead > 333) {
-				
+								
 				//Start recording video just after bg changes
 				if (startStoring){
 					LightRef = true;
@@ -217,7 +272,8 @@ public class Main {
                                 new Scalar(0, 255, 0), 4, 8, 0);
                     }
 
-                    nFaces = front_faces.toArray().length;
+                    nFaces = front_faces.toArray().length - faces_covered;
+                    faces_covered = 0;
                     if (notif1given && !startAverageCalc && nFaces>0){
                     	startAverageCalc = true;
                     }
@@ -289,6 +345,7 @@ public class Main {
                     	System.out.println("2nd notif..................................................... Alert 2");
                         notifThread.p = BYTE_ALERT2;
                         notifThread.myNotifId = myNotifId;
+                        System.out.println("........................mynotifid main thread alert case" + myNotifId);
                         notifThread.sendNotif = true;
                         myNotifId++;
                     }else {
@@ -297,6 +354,7 @@ public class Main {
                         notifThread.nPersons = nPersons;
                         notifThread.nFaces = nFaces;
                         notifThread.myNotifId = myNotifId;
+                        System.out.println("........................mynotifid main thread " + myNotifId);
                         notifThread.sendNotif = true;
                         myNotifId++;
                         
@@ -307,9 +365,10 @@ public class Main {
 
                     if (!notif2given){
                     	notif2given = true;
-
                         writer4android.release();
-                        sendingVideo.notifId2filepaths.put(new Integer(myNotifId), store_name4android);
+                        notifId2filepaths.put(new Integer(notifThread.myNotifId), store_name4android);
+                        System.out.println("................................................store name = "+ store_name4android);
+                        System.out.println("...............vdo notif id exists = "+ notifId2filepaths.containsKey(notifThread.myNotifId));
                         SendMail.sendmail_notif = true;
                     }
                     
@@ -323,7 +382,7 @@ public class Main {
                     nFacesFrames = 0;
                 }
 
-                /*
+              
 				if( ((System.currentTimeMillis()-time3) > 2400) && (System.currentTimeMillis()-time3) < 4500 )
 				{ 
 					
@@ -348,7 +407,7 @@ public class Main {
 					}
 					
 				}
-				*/
+				
 				
 			}else {
 				dNow = new Date();
@@ -360,7 +419,7 @@ public class Main {
 				{
 					System.out.println("abrupt end...........................");
 					writer4android.release();
-					sendingVideo.notifId2filepaths.put(new Integer(myNotifId), store_name4android);
+					notifId2filepaths.put(new Integer(myNotifId), store_name4android);
 					notifThread.p = BYTE_ABRUPT_END;
 					notifThread.myNotifId = myNotifId;
 					notifThread.sendNotif = true;
@@ -396,10 +455,14 @@ public class Main {
 			BufferedImage camimg2 = timestampIt(camimg);
 			sendingFrame.frame = camimg2;
 			
-			if (framesRead < 350) framesRead++;
+			if (framesRead < 350) {
+				framesRead++;
+				//System.out.println("frmes_read" + framesRead);
+			}
 			time4 = System.currentTimeMillis();
 			timeNow2 = System.currentTimeMillis();
 			System.out.println(timeNow2 - timeNow1);
+		
 			
 			System.out.println("frmes_read" + framesRead);
 			timeNow1 = timeNow2;
@@ -442,14 +505,16 @@ public class Main {
     	        //System.out.println(String.format("Detected %s Mouth(s)", mouth.toArray().length));
     	        }
     	    }
-    	    //if(faceNotCovered){
+    	    if(faceNotCovered){
     	    	System.out.println(String.format("Detected %s face(s)", front_faces.toArray().length));
+    	    	faceNotCovered=false;
+
     	    	//FacenotCovered=false;
-    	    //}else{
+    	    }else{
     	    	//System.out.println(String.format("Detected people = 0"));
     	    	//break;                                                                    ///add break for multiple faces or else no need	
-    	    //}
-    	}
+    	    	faces_covered++;
+    	    }    	}
     	return front_faces;
     	//return mRgba;
 	}

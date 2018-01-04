@@ -27,7 +27,7 @@ public class DetectPerson {
             String[] darknetComm = new String[]{"./darknet", "detector", "demo", "cfg/voc.data", "cfg/yolo-voc.cfg", "yolo-voc.weights"};
             Process proc = rt.exec(darknetComm, null, new File("/home/mithi/Desktop/darknet"));
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
 
     }
@@ -82,7 +82,7 @@ public class DetectPerson {
             return count;
 
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             return 0;
         }
 

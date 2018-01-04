@@ -46,7 +46,7 @@ public class SendingFrame extends Thread {
 
                             //DataOutputStream dout = new DataOutputStream(out);
                             //dout.writeInt(buf.length);
-                            System.out.println(buf.length);
+                            //System.out.println(buf.length);
                             //in.read();
 
                             InetAddress serverAddress = ((InetSocketAddress) socket.getRemoteSocketAddress()).getAddress();
@@ -60,7 +60,7 @@ public class SendingFrame extends Thread {
 
 
                         long time2 = System.currentTimeMillis();
-                        System.out.println("time = " + (time2 - time1));
+                        //System.out.println("time = " + (time2 - time1));
                     }
                 }
             }).start();
