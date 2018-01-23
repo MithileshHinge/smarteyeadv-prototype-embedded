@@ -23,17 +23,18 @@ public class Listen extends Thread {
 	static InputStream in;
 	static DatagramSocket dataSocket;
 	
-	static int sampleRate = 44100; 
+	static int sampleRate = 16000; 
 	static AudioFormat format;
 	static DataLine.Info dataLineInfo;
 	static TargetDataLine targetDataLine;
+	
+	public static boolean listen = true;
 	
 	
 	public void run(){
 		System.out.println(String.format("Listen thread started"));
 		try {
 			serverSocket = new ServerSocket(listen_handshake);
-            dataSocket = new DatagramSocket(listenport);        
             //dataSocket.setSoTimeout(100);
 		} catch (IOException e1) {
 			e1.printStackTrace();
@@ -41,24 +42,11 @@ public class Listen extends Thread {
 		
 		while(true){
 			try{
-		    System.out.println("#############################while entered");	
+		    //System.out.println("#############################while entered");	
 			serverSocket.setSoTimeout(0);
 			socket = serverSocket.accept();
-		    System.out.println("############################### SERVER SOCKET ACCEPT   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		    //System.out.println("###################################################### SERVER SOCKET ACCEPT   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			out = socket.getOutputStream();
-			in = socket.getInputStream();
-			int p=in.read();
-			
-			if(p==1)
-			{
-				p = 0;
-				System.out.println(String.format(".................p=1 received"));
-				out.write(2);
-				out.flush();
-			}
-			else{
-				continue;
-			}
 			
 			format = new AudioFormat(sampleRate, 16, 1, true, false);
 			dataLineInfo = new DataLine.Info(TargetDataLine.class, format);
@@ -69,25 +57,33 @@ public class Listen extends Thread {
 			int numBytesRead;
 			byte[] data = new byte[4096];
 			DatagramPacket dgp;
-			//InetAddress destination = InetAddress.getByName(host);
 			InetAddress destination = ((InetSocketAddress) socket.getRemoteSocketAddress()).getAddress();
 			
-			while(true){
+			while(listen){
 				try{
-				out = socket.getOutputStream();
-				out.write(3);
-				out.flush();
-				numBytesRead =  targetDataLine.read(data, 0, data.length);
-				//System.out.println("n: " + numBytesRead);
-				dgp = new DatagramPacket(data,data.length,destination,listenport);
-				//System.out.println(data);
-				dataSocket.send(dgp);
-				System.out.println("..........................................................................................SENDING AUDIO DATA:" + data);
+					
+					dataSocket = new DatagramSocket(listenport);
+					//if(out!= null) out.close();	
+					/*out = socket.getOutputStream();
+					out.write(3);
+					out.flush();*/
+					numBytesRead =  targetDataLine.read(data, 0, data.length);
+					//System.out.println("n: " + numBytesRead);
+					dgp = new DatagramPacket(data,data.length,destination,listenport);
+					//System.out.println(data);
+					dataSocket.send(dgp);
+					System.out.println("..........................................................................................SENDING AUDIO DATA:" + data);
+					dataSocket.close();
 				}catch(IOException e){
 					targetDataLine.close();
+					System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      IO Exception  BREAK ..........");
+					//if(socket != null) socket.close();
 					break;
 				}		
 			}
+			socket.close();
+			
+			listen = true;
 			
 			
 			}catch(IOException e){

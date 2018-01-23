@@ -122,6 +122,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 import javax.imageio.ImageIO;
 
@@ -136,16 +137,16 @@ public class NotificationThread extends Thread {
 	public byte p;
 	public int myNotifId;
 	public boolean sendNotif = false;
-	public boolean continue_sending = false;
 	public BufferedImage notifFrame;
 
 	public int nPersons, nFaces;
-
+	
 	public NotificationThread() {
 		try {
 			serverSocket_note = new ServerSocket(port_note);
 			serverSocket_note.setSoTimeout(0);                                                              //correction
 			serverSocket_frame = new ServerSocket(port_frame);
+			serverSocket_frame.setSoTimeout(3000);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println(String.format("problem2"));
@@ -158,56 +159,58 @@ public class NotificationThread extends Thread {
 		while (true) {
 			if (sendNotif) {
 				try {
-					while (continue_sending) {
-						System.out.println("socket accept war thambla....@@@@!!!!!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-						socket_note = serverSocket_note.accept();
-						System.out.println("######################################.......................Client Sapadla!!!!!!");
-						out_note = socket_note.getOutputStream();
-						in_note = socket_note.getInputStream();
-						out_note.write(p);
-						out_note.flush();
-						in_note.read();
-						System.out.println("........................still sending p.........................."+ p);
+					
+					System.out.println("socket accept war thambla....@@@@!!!!!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+					socket_note = serverSocket_note.accept();
+					System.out.println("######################################.......................Client Sapadla!!!!!!");
+					out_note = socket_note.getOutputStream();
+					in_note = socket_note.getInputStream();
+					out_note.write(p);
+					out_note.flush();
+					in_note.read();
+					System.out.println("........................still sending p.........................."+ p);
 
-						if (p == Main.BYTE_PEOPLE_VDOGENERATING || p == Main.BYTE_PEOPLE_VDOGENERATED){
-							System.out.println("......................sending nPersons: " + nPersons);
-							System.out.println("......................sending nFaces: " + nFaces);
-						    out_note.write(nPersons);
-						    out_note.write(nFaces);
-						    out_note.flush();
-						    in_note.read();
-						    
-                        }
+					if (p == Main.BYTE_PEOPLE_VDOGENERATING || p == Main.BYTE_PEOPLE_VDOGENERATED){
+						System.out.println("......................sending nPersons: " + nPersons);
+						System.out.println("......................sending nFaces: " + nFaces);
+					    out_note.write(nPersons);
+					    out_note.write(nFaces);
+					    out_note.flush();
+					    in_note.read();
+					    
+                    }
 
-						if (p == Main.BYTE_PEOPLE_VDOGENERATING || p == Main.BYTE_ALERT1) {					
-							socket_frame = serverSocket_frame.accept();
-							out_frame = socket_frame.getOutputStream();
-							ImageIO.write(notifFrame, "jpg", out_frame);
-							socket_frame.close();
-							System.out.println("1st notif sent..........................");
-						}
-						if (p == Main.BYTE_PEOPLE_VDOGENERATED || p == Main.BYTE_ALERT2 || p == Main.BYTE_ABRUPT_END){
-							DataOutputStream dout_activity = new DataOutputStream(out_note);
-							dout_activity.writeUTF(Main.store_activityname);
-							dout_activity.flush();
-							System.out.println("2nd vdo generated notif sent.......................");
-						}
-						DataOutputStream dout_note = new DataOutputStream(out_note);
-						System.out.println("........................still sending notif id.......................... = "+ myNotifId);
-						dout_note.writeInt(myNotifId);
-						dout_note.flush();
-						sendNotif = false;
-						int q = in_note.read();
-						if (q == 9)
-							continue_sending = false;
-						socket_note.close();
+					if (p == Main.BYTE_PEOPLE_VDOGENERATING || p == Main.BYTE_ALERT1) {					
+						socket_frame = serverSocket_frame.accept();
+						out_frame = socket_frame.getOutputStream();
+						ImageIO.write(notifFrame, "jpg", out_frame);
+						socket_frame.close();
+						System.out.println("1st notif sent..........................");
 					}
-					continue_sending = true;
+					if (p == Main.BYTE_PEOPLE_VDOGENERATED || p == Main.BYTE_ALERT2 || p == Main.BYTE_ABRUPT_END){
+						DataOutputStream dout_activity = new DataOutputStream(out_note);
+						dout_activity.writeUTF(Main.store_activityname);
+						dout_activity.flush();
+						System.out.println("2nd vdo generated notif sent.......................");
+					}
+					DataOutputStream dout_note = new DataOutputStream(out_note);
+					System.out.println("........................still sending notif id.......................... = "+ myNotifId);
+					dout_note.writeInt(myNotifId);
+					dout_note.flush();
+					sendNotif = false;
+					System.out.println("trying to read q ????????????????????????????????????????????????????");
+					int q = in_note.read();
+					if (q == 9 ){
+						System.out.println("sending notif loop exit:::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
+					}else System.out.println("sending notif loop exit:::::::::::::::::::::::::::::::::::::::::::::::::::::::::" + q);
+					socket_note.close();
+
 					// System.out.println(String.format("connected"));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					System.out.println(String.format("connection_prob2"));
 					e.printStackTrace();
+					continue;
 				}
 			} else {
 				try {

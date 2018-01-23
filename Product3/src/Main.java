@@ -79,9 +79,10 @@ public class Main {
 	
 	static BufferedImage camimg;
 	public static int faces_covered=0;
-	public static String ipAddr,ipAddr2;
+	public static String ipAddr = "192.168.43.144",ipAddr2;
 	private volatile static ConcurrentHashMap<Integer, String> notifId2filepaths = new ConcurrentHashMap<>();
 	
+	public static NotificationThread notifThread = new NotificationThread();
 	
 
 	static {
@@ -103,7 +104,9 @@ public class Main {
 		Listen listen = new Listen();
 		listen.start();
 		
-		NotificationThread notifThread = new NotificationThread();
+		MessageThread msgThread = new MessageThread();
+		msgThread.start();
+		
 		notifThread.start();
 
 		DetectPerson detectPerson = new DetectPerson();
@@ -136,16 +139,18 @@ public class Main {
 		
 		try {
 			NetworkInterface nif = NetworkInterface.getByName("wlan2");
-			 Enumeration <InetAddress> addresses = nif.getInetAddresses();
-			 while( addresses.hasMoreElements() )
-		      {
-		        InetAddress addr = addresses.nextElement();
-		        if( (addr instanceof Inet4Address) && !addr.isLoopbackAddress() )
-		        {
-		          System.out.println(addr.toString());
-		          ipAddr = addr.toString();
-		        }
-		      }
+			 if(nif != null){
+				 Enumeration <InetAddress> addresses = nif.getInetAddresses();
+				 while( addresses.hasMoreElements() )
+			      {
+			        InetAddress addr = addresses.nextElement();
+			        if( (addr instanceof Inet4Address) && !addr.isLoopbackAddress() )
+			        {
+			          System.out.println(addr.toString());
+			          ipAddr = addr.toString();
+			        }
+			      }
+			 }
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -155,24 +160,26 @@ public class Main {
 			timeNow1 = System.currentTimeMillis();
             try {
 				NetworkInterface nif = NetworkInterface.getByName("wlan2");
-				 Enumeration <InetAddress> addresses = nif.getInetAddresses();
-				 while( addresses.hasMoreElements() )
-			      {
-			        InetAddress addr = addresses.nextElement();
-			        if( (addr instanceof Inet4Address) && !addr.isLoopbackAddress() )
-			        {
-			          //System.out.println(addr.toString());
-			          ipAddr2= addr.toString();
-			          if(!ipAddr.equals(ipAddr2))   
-			        	  {
-			        	  ipAddr = ipAddr2;
-			        	  SendMail.sendmail_ipChange =true;
-			        	  SendMail sendmail = new SendMail();
-			        	  sendmail.start();
-			        	  
-			        	  }
-			        }
-			      }
+				if(nif != null){
+					 Enumeration <InetAddress> addresses = nif.getInetAddresses();
+					 while( addresses.hasMoreElements() )
+				      {
+				        InetAddress addr = addresses.nextElement();
+				        if( (addr instanceof Inet4Address) && !addr.isLoopbackAddress() )
+				        {
+				          //System.out.println(addr.toString());
+				          ipAddr2= addr.toString();
+				          if(!ipAddr.equals(ipAddr2))   
+				        	  {
+				        	  ipAddr = ipAddr2;
+				        	  SendMail.sendmail_ipChange =true;
+				        	  SendMail sendmail = new SendMail();
+				        	  sendmail.start();
+				        	  
+				        	  }
+				        }
+				      }
+				}
 			} catch (SocketException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
