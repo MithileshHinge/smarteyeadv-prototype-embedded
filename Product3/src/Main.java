@@ -101,9 +101,6 @@ public class Main {
 		SendingAudio sendingAudio = new SendingAudio();
 		sendingAudio.start();
 		
-		Listen listen = new Listen();
-		listen.start();
-		
 		MessageThread msgThread = new MessageThread();
 		msgThread.start();
 		

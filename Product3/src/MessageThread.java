@@ -8,6 +8,7 @@ public class MessageThread extends Thread{
 	private int port = 6676;
 	private Socket socket;
 	private ServerSocket serverSocket;
+	final byte BYTE_STOP_LIVEFEED = 4, BYTE_START_LISTEN = 5, BYTE_STOP_LISTEN = 6;
 	
 	public MessageThread(){
 		try {
@@ -26,17 +27,17 @@ public class MessageThread extends Thread{
 				int p = socket.getInputStream().read();
 				
 				switch(p){
-				case 1:
-					break;
-				case 3:
-					break;
-				case 4:
+				case BYTE_STOP_LIVEFEED:
 					System.out.println("@@@@@@@@@@@@@@@@@Live Feed off kela..........................");
 					SendingFrame.livefeed = false;
 					break;
-				case 5:
+				case BYTE_START_LISTEN:
+					System.out.println("@@@@@@@@@@@@@@@@@Listen on kela.............................");
+					SendingFrame.listen = true;
+					break;
+				case BYTE_STOP_LISTEN:
 					System.out.println("@@@@@@@@@@@@@@@@@Listen off kela.............................");
-					Listen.listen = false;
+					SendingFrame.listen = false;
 					break;
 				}
 				
